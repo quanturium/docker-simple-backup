@@ -34,7 +34,7 @@ def create_archive(
     docker_service, pattern: str, source: Path, destination: Path
 ) -> Path:
     if not source.exists():
-        raise Exception("Source folder does not exists: " + source)
+        raise Exception("Source folder does not exists: " + source.as_posix())
     # Stop labeled containers for data safefy
     containers = docker_service.containers.list(
         filters={"label": DSB_STOP_DURING_BACKUP_LABEL + "=true"}
