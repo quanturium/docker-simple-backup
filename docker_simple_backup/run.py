@@ -10,6 +10,7 @@ import docker
 from docker_simple_backup.service.service_interface import ServiceInterface
 import logging
 
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 # Main configuration
@@ -40,15 +41,15 @@ def create_archive(
     )
     try:
         stop_docker_containers(docker_service, containers)
-        log.debug("Creating archive...")
+        log.info("Creating archive...")
         archive_name = datetime.today().strftime(pattern) + ".zip"
         archive_path = destination / archive_name
         destination.mkdir(parents=True, exist_ok=True)
         os.system("zip -qr " + archive_path.as_posix() + " " + source.as_posix())
-        log.debug("Archive created: " + archive_name)
+        log.info("Archive created: " + archive_name)
         return archive_path
-    except Exception as ex:
-        log.exception("Archive error: " + ex)
+    except Exception:
+        log.exception("Archive error")
         raise
     finally:
         # Make sure we restart the containers
@@ -74,49 +75,49 @@ def create_service(args):
 
 def stop_docker_containers(docker: docker.DockerClient, containers):
     if len(containers) > 0:
-        log.debug("Stopping labeled containers...")
+        log.info("Stopping labeled containers...")
         for x in containers:
             x.stop()
-            log.debug("Container stopped: " + x.name)
+            log.info("Container stopped: " + x.name)
 
 
 def start_docker_containers(docker: docker.DockerClient, containers):
     if len(containers) > 0:
-        log.debug("Starting back labeled containers...")
+        log.info("Starting back labeled containers...")
         for x in containers:
             x.start()
-            log.debug("Container started: " + x.name)
+            log.info("Container started: " + x.name)
 
 
 def run_custom_backup(docker: docker.DockerClient):
-    log.debug("Looking for custom backups...")
+    log.info("Looking for custom backups...")
     # Include all since it might have been stopped
     containers = docker.containers.list(filters={"label": DSB_EXEC_CUSTOM_BACKUP_LABEL})
-    log.debug("Custom backups found: " + len(containers))
+    log.info("Custom backups found: " + str(len(containers)))
     if len(containers) > 0:
-        log.debug("Executing custom backups...")
+        log.info("Executing custom backups...")
         for x in containers:
             cmd = x.labels[DSB_EXEC_CUSTOM_BACKUP_LABEL]
-            log.debug("Executing for container:", x.name)
+            log.info("Executing for container: " + x.name)
             result = x.exec_run(cmd)
             for n in result.output.decode("utf-8").splitlines():
-                log.debug(x.name, ">", n)
+                log.info(x.name + ">" + str(n))
 
 
 def process_archive_with_service(
     service: ServiceInterface, archive: Path, old_archive_count: int
 ):
-    log.debug("Processing archive with service...")
+    log.info("Processing archive with service...")
     try:
         service.copy_archive(archive)
         service.remove_old_archives(old_archive_count)
-        log.debug("Service completed")
-    except Exception as ex:
-        log.exception("Service failed " + ex)
+        log.info("Service completed")
+    except Exception:
+        log.exception("Service failed")
 
 
 def run_with_service(service, args):
-    log.debug("Starting backup...")
+    log.info("Starting backup...")
     docker_service = docker.DockerClient(base_url="unix://" + args.docker_socket)
     try:
         run_custom_backup(docker_service)  # First, run custom backups
@@ -129,10 +130,10 @@ def run_with_service(service, args):
         if archive is None:
             raise Exception("Archive empty due to archiving failure")
         process_archive_with_service(service, archive, args.rotation_max_count)
-        log.debug("Backup completed: success")
+        log.info("Backup completed: success")
         cleanup(Path(args.destination_dir))
-    except Exception as ex:
-        log.exception("Backup completed: error " + ex)
+    except Exception:
+        log.exception("Backup completed: error")
 
 
 def run(args):
@@ -154,12 +155,13 @@ def schedule_run(args):
                 offset = entry.next(default_utc=True)
                 next_run = time.time() + offset
             else:
-                log.debug(
-                    "Next backup scheduled for :" + datetime.fromtimestamp(next_run)
+                log.info(
+                    "Next backup scheduled for: "
+                    + str(datetime.fromtimestamp(next_run))
                 )
                 time.sleep(offset + 1)
-    except ValueError as err:
-        log.exception("Invalid --schedule value:", err)
+    except ValueError:
+        log.exception("Invalid --schedule value")
 
 
 def main():

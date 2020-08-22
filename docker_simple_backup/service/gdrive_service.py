@@ -28,9 +28,9 @@ class GdriveService(ServiceInterface):
 
     def copy_archive(self, archive: Path):
         gdrive = self.get_gdrive()
-        print("Uploading archive to gdrive...")
+        log.info("Uploading archive to gdrive...")
         file_id = self.upload_archive(gdrive, self.args.service_gdrive_folder, archive)
-        print("Archive uploaded:", file_id)
+        log.info("Archive uploaded: " + str(file_id))
 
     def remove_old_archives(self, max_count: int):
         gdrive = self.get_gdrive()
@@ -42,7 +42,7 @@ class GdriveService(ServiceInterface):
             result = result[max_count:]
             for x in result:
                 self.remove_file(gdrive, x["id"])
-            print("Cleaned up", (backup_count - max_count), "old archive(s)")
+            log.info("Cleaned up " + str(backup_count - max_count) + " old archive(s)")
 
     def get_gdrive(self):
         creds = None

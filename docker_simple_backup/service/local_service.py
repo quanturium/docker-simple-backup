@@ -16,11 +16,11 @@ class LocalService(ServiceInterface):
             )
 
     def copy_archive(self, archive: Path):
-        print("Copying archive to folder...")
+        log.info("Copying archive to folder...")
         destination = Path(self.args.service_local_dir)
         destination.mkdir(parents=True, exist_ok=True)
         copy2(archive, self.args.service_local_dir)
-        print("Archive copied:", self.args.service_local_dir / archive.name)
+        log.info("Archive copied: " + str(destination / archive.name))
 
     def remove_old_archives(self, max_count: int):
         destination = Path(self.args.service_local_dir)
@@ -31,4 +31,4 @@ class LocalService(ServiceInterface):
             paths = paths[max_count:]
             for x in paths:
                 x.unlink()
-            print("Cleaned up", (backup_count - max_count), "old archive(s)")
+            log.info("Cleaned up " + str(backup_count - max_count) + " old archive(s)")
