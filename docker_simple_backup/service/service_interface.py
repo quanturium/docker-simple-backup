@@ -8,11 +8,13 @@ class ServiceInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'copy_archive') and
-                callable(subclass.copy_archive) and
-                hasattr(subclass, 'remove_old_archives') and
-                callable(subclass.remove_old_archives) or
-                NotImplemented)
+        return (
+            hasattr(subclass, "copy_archive")
+            and callable(subclass.copy_archive)
+            and hasattr(subclass, "remove_old_archives")
+            and callable(subclass.remove_old_archives)
+            or NotImplemented
+        )
 
     @abc.abstractmethod
     def copy_archive(self, archive: Path):
